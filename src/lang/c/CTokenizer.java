@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 
-import lang.*;
+import lang.Tokenizer;
 
 public class CTokenizer extends Tokenizer<CToken, CParseContext> {
 	@SuppressWarnings("unused")
@@ -75,7 +75,7 @@ public class CTokenizer extends Tokenizer<CToken, CParseContext> {
 				} else if (ch == (char) -1) {	// EOF
 					startCol = colNo - 1;
 					state = 1;
-				} else if (ch >= '0' && ch <= '9') {
+				} else if (ch >= '1' && ch <= '9') {
 					startCol = colNo - 1;
 					text.append(ch);
 					state = 3;
@@ -95,6 +95,14 @@ public class CTokenizer extends Tokenizer<CToken, CParseContext> {
 					startCol = colNo - 1;
 					text.append(ch);
 					state = 6;
+				}else if ( ch == '&') {
+					startCol = colNo - 1;
+					text.append(ch);
+					state = 7;
+				} else if ( ch == '0') {
+					startCol = colNo - 1;
+					text.append(ch);
+					state = 8;
 				} else {			// ヘンな文字を読んだ
 					startCol = colNo - 1;
 					text.append(ch);
@@ -116,8 +124,13 @@ public class CTokenizer extends Tokenizer<CToken, CParseContext> {
 				} else {
 					// 数の終わり
 					backChar(ch);	// 数を表さない文字は戻す（読まなかったことにする）
-					tk = new CToken(CToken.TK_NUM, lineNo, startCol, text.toString());
-					accept = true;
+					if(Integer.decode(text.toString()) > 32767 || Integer.decode(text.toString()) < -32768) {
+						System.err.println("下の値は16ビット符号付き整数で表現できる範囲を超えています");
+						state = 2;
+					}else {
+						tk = new CToken(CToken.TK_NUM,lineNo,startCol,text.toString());
+						accept = true;
+					}
 				}
 				break;
 			case 4:					// +を読んだ
@@ -164,6 +177,81 @@ public class CTokenizer extends Tokenizer<CToken, CParseContext> {
 				}
 				text = new StringBuffer();
 				state = 0;
+				break;
+			case 7: // &を読んだ
+				tk = new CToken(CToken.TK_AMP,lineNo,startCol,text.toString());
+				accept = true;
+				break;
+			case 8: //0を読んだ
+				ch = readChar();
+				if( ch == 'x') {
+					startCol = colNo - 1;
+					text.append(ch);
+					state = 9;
+				} else if ( '0' <= ch && ch <= '7') {
+					startCol = colNo - 1;
+					text.append(ch);
+					state = 11;
+				}else {
+					backChar(ch);
+					state = 3;
+				}
+				break;
+			case 9: // 0xを読んだ
+				ch = readChar();
+				if( ( '0' <= ch && ch <= '9' ) || ( 'a' <= ch && ch <= 'f' ) || ( 'A' <= ch && ch <= 'F' ) ) {
+					startCol = colNo - 1;
+					text.append(ch);
+					state = 10;
+				} else {
+					startCol = colNo - 1;
+					state = 2;
+				}
+				break;
+			case 10: // 16進数を読んだ
+				ch = readChar();
+				if( ( '0' <= ch && ch <= '9' ) || ( 'a' <= ch && ch <= 'f' ) || ( 'A' <= ch && ch <= 'F' ) ) {
+					startCol = colNo - 1;
+					text.append(ch);
+					state = 10;
+				} else {
+					backChar(ch);
+					if(Integer.decode(text.toString()) > 65535) {
+						System.err.println("下の値は16ビット符号なし整数で表現できる範囲を超えています");
+						state = 2;
+					}else {
+						tk = new CToken(CToken.TK_NUM,lineNo,startCol,text.toString());
+						accept = true;
+					}
+				}
+				break;
+			case 11: // 8進数を読んだ
+				ch = readChar();
+				if( '0' <= ch && ch <= '7' ) {
+					startCol = colNo - 1;
+					text.append(ch);
+					state = 11;
+				} else if ( ch == '8' || ch == '9') {
+					backChar(ch);
+					if(Integer.decode(text.toString()) > 65535) {
+						System.err.println("下の値は16ビット符号なし整数で表現できる範囲を超えています");
+						state = 2;
+					}else {
+						tk = new CToken(CToken.TK_NUM,lineNo,startCol,text.toString());
+						accept = true;
+					}
+					text.append(ch);
+					state = 2;
+				} else {
+					backChar(ch);
+					if(Integer.decode(text.toString()) > 65535) {
+						System.err.println("下の値は16ビット符号なし整数で表現できる範囲を超えています");
+						state = 2;
+					}else {
+						tk = new CToken(CToken.TK_NUM,lineNo,startCol,text.toString());
+						accept = true;
+					}
+				}
 				break;
 			}
 		}

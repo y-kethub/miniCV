@@ -2,8 +2,12 @@ package lang.c.parse;
 
 import java.io.PrintStream;
 
-import lang.*;
-import lang.c.*;
+import lang.FatalErrorException;
+import lang.c.CParseContext;
+import lang.c.CParseRule;
+import lang.c.CToken;
+import lang.c.CTokenizer;
+import lang.c.CType;
 
 public class Expression extends CParseRule {
 	// expression ::= term { expressionAdd }
@@ -21,22 +25,22 @@ public class Expression extends CParseRule {
 		term.parse(pcx);
 		CTokenizer ct = pcx.getTokenizer();
 		CToken tk = ct.getCurrentToken(pcx);
-		while (ExpressionAdd.isFirst(tk) || ExpressionTake.isFirst(tk)) {
+		while (ExpressionAdd.isFirst(tk) || ExpressionSub.isFirst(tk)) {
 			while (ExpressionAdd.isFirst(tk)) {
 				list = new ExpressionAdd(pcx, term);
 				list.parse(pcx);
 				term = list;
 				tk = ct.getCurrentToken(pcx);
 			}
-			
-			while (ExpressionTake.isFirst(tk)) {
-				list = new ExpressionTake(pcx, term);
+
+			while (ExpressionSub.isFirst(tk)) {
+				list = new ExpressionSub(pcx, term);
 				list.parse(pcx);
 				term = list;
 				tk = ct.getCurrentToken(pcx);
 			}	
 		}
-		
+
 		expression = term;
 	}
 
@@ -83,9 +87,10 @@ class ExpressionAdd extends CParseRule {
 	public void semanticCheck(CParseContext pcx) throws FatalErrorException {
 		// 足し算の型計算規則
 		final int s[][] = {
-		//		T_err			T_int
-			{	CType.T_err,	CType.T_err },	// T_err
-			{	CType.T_err,	CType.T_int },	// T_int
+				//		T_err			T_int
+				{	CType.T_err,	CType.T_err,	CType.T_err },	// T_err
+				{	CType.T_err,	CType.T_int,	CType.T_pint },	// T_int
+				{	CType.T_err,	CType.T_pint,	CType.T_err }, //  T_pint
 		};
 		if (left != null && right != null) {
 			left.semanticCheck(pcx);
@@ -114,11 +119,11 @@ class ExpressionAdd extends CParseRule {
 	}
 }
 
-class ExpressionTake extends CParseRule {
-	// expressionTake ::= '-' term
+class ExpressionSub extends CParseRule {
+	// expressionSub ::= '-' term
 	private CToken op;
 	private CParseRule left, right;
-	public ExpressionTake(CParseContext pcx, CParseRule left) {
+	public ExpressionSub(CParseContext pcx, CParseRule left) {
 		this.left = left;
 	}
 	public static boolean isFirst(CToken tk) {
@@ -141,9 +146,10 @@ class ExpressionTake extends CParseRule {
 	public void semanticCheck(CParseContext pcx) throws FatalErrorException {
 		// 引き算の型計算規則
 		final int s[][] = {
-		//		T_err			T_int
-			{	CType.T_err,	CType.T_err },	// T_err
-			{	CType.T_err,	CType.T_int },	// T_int
+				//		T_err			T_int
+				{	CType.T_err,	CType.T_err,	CType.T_err },	// T_err
+				{	CType.T_err,	CType.T_int,	CType.T_err },	// T_int
+				{	CType.T_err,	CType.T_pint,	CType.T_int },
 		};
 		if (left != null && right != null) {
 			left.semanticCheck(pcx);
