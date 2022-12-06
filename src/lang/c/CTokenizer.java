@@ -87,10 +87,6 @@ public class CTokenizer extends Tokenizer<CToken, CParseContext> {
 					startCol = colNo - 1;
 					text.append(ch);
 					state = 5;
-				} else if (ch == '-') {
-					startCol = colNo - 1;
-					text.append(ch);
-					state = 5;
 				} else if (ch == '/') {
 					startCol = colNo - 1;
 					text.append(ch);
@@ -103,7 +99,19 @@ public class CTokenizer extends Tokenizer<CToken, CParseContext> {
 					startCol = colNo - 1;
 					text.append(ch);
 					state = 8;
-				} else {			// ヘンな文字を読んだ
+				} else if (ch == '*') {
+					startCol = colNo - 1;
+					text.append(ch);
+					state = 12;
+				} else if (ch == '(') { 
+					startCol = colNo - 1;
+					text.append(ch);
+					state = 13;
+				} else if (ch == ')') { 
+					startCol = colNo - 1;
+					text.append(ch);
+					state = 14;
+				}else {        // ヘンな文字を読んだ
 					startCol = colNo - 1;
 					text.append(ch);
 					state = 2;
@@ -152,6 +160,8 @@ public class CTokenizer extends Tokenizer<CToken, CParseContext> {
 							break;
 						}
 					}
+					text = new StringBuffer();
+					state = 0;
 				} else if(ch == '*') {  //複数行コメント
 					ch = readChar();
 					while (true) {
@@ -173,10 +183,13 @@ public class CTokenizer extends Tokenizer<CToken, CParseContext> {
 							break;
 						}
 					}
-
+					text = new StringBuffer();
+					state = 0;
+				} else {
+					backChar(ch);
+					tk = new CToken(CToken.TK_DIV, lineNo, startCol, "/");
+					accept = true;
 				}
-				text = new StringBuffer();
-				state = 0;
 				break;
 			case 7: // &を読んだ
 				tk = new CToken(CToken.TK_AMP,lineNo,startCol,text.toString());
@@ -252,6 +265,18 @@ public class CTokenizer extends Tokenizer<CToken, CParseContext> {
 						accept = true;
 					}
 				}
+				break;
+			case 12: // *を読んだ
+				tk = new CToken(CToken.TK_MULT, lineNo, startCol, "*");
+				accept = true;
+				break;
+			case 13: // (を読んだ
+				tk = new CToken(CToken.TK_LPAR, lineNo, startCol, "(");
+				accept = true;
+				break;
+			case 14: // )を読んだ
+				tk = new CToken(CToken.TK_RPAR, lineNo, startCol, ")");
+				accept = true;
 				break;
 			}
 		}
