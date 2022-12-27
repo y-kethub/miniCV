@@ -1,31 +1,39 @@
 package lang.c.parse;
 
 import java.io.PrintStream;
+import java.util.ArrayList;
 import lang.*;
 import lang.c.*;
 
 public class Program extends CParseRule {
 	// program ::= expression EOF
-	private CParseRule program;
+	private ArrayList<CParseRule> program;
 
 	public Program(CParseContext pcx) {
+		program = new ArrayList<CParseRule>();
 	}
 	public static boolean isFirst(CToken tk) {
 		return Expression.isFirst(tk);
 	}
 	public void parse(CParseContext pcx) throws FatalErrorException {
 		// ここにやってくるときは、必ずisFirst()が満たされている
-		program = new Expression(pcx);
-		program.parse(pcx);
 		CTokenizer ct = pcx.getTokenizer();
 		CToken tk = ct.getCurrentToken(pcx);
+		while(Statement.isFirst(tk)) {
+			CParseRule state = new Statement(pcx);
+			state.parse(pcx);
+			tk = ct.getCurrentToken(pcx);
+			program.add(state);
+		}
 		if (tk.getType() != CToken.TK_EOF) {
 			pcx.fatalError(tk.toExplainString() + "プログラムの最後にゴミがあります");
 		}
 	}
 
 	public void semanticCheck(CParseContext pcx) throws FatalErrorException {
-		if (program != null) { program.semanticCheck(pcx); }
+		for(CParseRule state : program) {
+			state.semanticCheck(pcx);
+		}
 	}
 
 	public void codeGen(CParseContext pcx) throws FatalErrorException {
@@ -37,8 +45,9 @@ public class Program extends CParseRule {
 		if (program != null) {
 			o.println("__START:");
 			o.println("\tMOV\t#0x1000, R6\t; ProgramNode: 計算用スタック初期化");
-			program.codeGen(pcx);
-			o.println("\tMOV\t-(R6), R0\t; ProgramNode: 計算結果確認用");
+			for(CParseRule state : program) {
+				state.codeGen(pcx);
+			}
 		}
 		o.println("\tHLT\t\t\t; ProgramNode:");
 		o.println("\t.END\t\t\t; ProgramNode:");
