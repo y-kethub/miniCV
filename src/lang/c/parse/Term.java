@@ -12,7 +12,7 @@ import lang.c.CType;
 public class Term extends CParseRule {
 	// term ::= factor { termMult | termDiv }
 	private CParseRule factor;
-	private CParseRule term,list;
+	private CParseRule list;
 	public Term(CParseContext pcx) {
 	}
 	public static boolean isFirst(CToken tk) {
@@ -35,7 +35,6 @@ public class Term extends CParseRule {
 			factor = list;
 			tk = ct.getCurrentToken(pcx);
 		}
-		term = factor;
 	}
 
 	public void semanticCheck(CParseContext pcx) throws FatalErrorException {

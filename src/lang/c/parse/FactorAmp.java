@@ -11,7 +11,8 @@ import lang.c.CType;
 public class FactorAmp extends CParseRule {
 	// FactorAmp ::= AMP number
 	// number ::= NUM
-	private CParseRule number;
+	private CParseRule number,primary;
+	private CToken amp;
 	public FactorAmp(CParseContext pcx) {
 	}
 	public static boolean isFirst(CToken tk) {
@@ -19,12 +20,16 @@ public class FactorAmp extends CParseRule {
 	}
 	public void parse(CParseContext pcx) throws FatalErrorException {
 		CTokenizer ct = pcx.getTokenizer();
+		amp = ct.getCurrentToken(pcx);
 		CToken tk = ct.getNextToken(pcx);
 		if(tk.getType() == CToken.TK_NUM) {
 			number = new Number(pcx);
 			number.parse(pcx);
+		}else if(Primary.isFirst(tk)) {
+			primary = new Primary(pcx);
+			primary.parse(pcx);
 		} else {
-			pcx.fatalError(tk.toExplainString() + "&の後ろはnumberです");
+			pcx.fatalError(tk.toExplainString() + "&の後ろはnumberまたはprimaryです");
 		}
 	}
 
@@ -37,6 +42,16 @@ public class FactorAmp extends CParseRule {
 				setCType(CType.getCType(CType.T_err));
 			}
 			setConstant(number.isConstant());	// number は常に定数
+		}else if(primary != null) {
+			primary.semanticCheck(pcx);
+			if(((Primary)primary).hasPrimaryMult()) {
+				pcx.fatalError(amp.toExplainString() + "&の後ろにPrimaryMultがあります");
+			}else if(primary.getCType().isCType(CType.T_int)) {
+				setCType(CType.toPointer(primary.getCType()));
+				setConstant(primary.isConstant());
+			}else {
+				pcx.fatalError(amp.toExplainString() + "&の後ろに配列やポインタがあります");
+			}
 		}
 	}
 
@@ -45,6 +60,8 @@ public class FactorAmp extends CParseRule {
 		o.println(";;; factorAmp starts");
 		if (number != null) {
 			number.codeGen(pcx);
+		}else if(primary != null) {
+			primary.codeGen(pcx);
 		}
 		o.println(";;; factorAmp completes");
 	}

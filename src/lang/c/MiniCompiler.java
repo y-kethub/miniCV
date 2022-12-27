@@ -1,7 +1,8 @@
 package lang.c;
 
-import lang.*;
-import lang.c.parse.*;
+import lang.FatalErrorException;
+import lang.IOContext;
+import lang.c.parse.Program;
 
 public class MiniCompiler {
 	public static void main(String[] args) {

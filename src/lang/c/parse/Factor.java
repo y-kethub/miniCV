@@ -132,6 +132,9 @@ class MinusFactor extends CParseRule {
 		boolean c = false;
 		if(unsignedfactor != null) {
 			unsignedfactor.semanticCheck(pcx);
+			if(unsignedfactor.getCType().isCType(CType.T_pint)) {
+				pcx.fatalError(minus.toExplainString() + "-の後ろにポインタがあります");
+			}
 			t = unsignedfactor.getCType().getType();
 			c = unsignedfactor.isConstant();
 		}else {
