@@ -21,12 +21,12 @@ public class Primary extends CParseRule {
 	public static boolean isFirst(CToken tk) {
 		return PrimaryMult.isFirst(tk) || Variable.isFirst(tk);
 	}
-	
+
 	public void parse(CParseContext pcx) throws FatalErrorException {
 		// ここにやってくるときは、必ずisFirst()が満たされている
 		CTokenizer ct = pcx.getTokenizer();
 		tk = ct.getCurrentToken(pcx);
-		
+
 		if(PrimaryMult.isFirst(tk)) {
 			rule = new PrimaryMult(pcx);
 			rule.parse(pcx);
@@ -65,7 +65,7 @@ class PrimaryMult extends CParseRule {
 		CTokenizer ct = pcx.getTokenizer();
 		mul = ct.getCurrentToken(pcx);
 		CToken tk = ct.getNextToken(pcx);
-		
+
 		if(Variable.isFirst(tk)) {
 			rule = new Variable(pcx);
 			rule.parse(pcx);
@@ -73,12 +73,12 @@ class PrimaryMult extends CParseRule {
 			pcx.fatalError(tk.toExplainString() + "*の後ろはvariable");
 		}
 	}
-	
+
 	public void semanticCheck(CParseContext pcx) throws FatalErrorException {
 		if (rule != null) {
 			rule.semanticCheck(pcx);
 			if(!rule.getCType().isCType(CType.T_int)) {
-				System.err.println(rule.getCType().toString());
+				//System.err.println(rule.getCType().toString());
 				setCType(CType.toValue(rule.getCType()));
 				setConstant(rule.isConstant());
 			} else {
@@ -86,7 +86,7 @@ class PrimaryMult extends CParseRule {
 			}
 		}
 	}
-	
+
 	public void codeGen(CParseContext pcx) throws FatalErrorException {
 		PrintStream o = pcx.getIOContext().getOutStream();
 		o.println(";;; PrimaryMult starts");
@@ -98,5 +98,5 @@ class PrimaryMult extends CParseRule {
 		o.println(";;; PrimaryMult completes");
 	}
 }
-	
+
 
